@@ -3,7 +3,7 @@ Analysis on Tedx Data Scrapped from Tedx
 Data is available in a3.txt
 Every column is tab delimited and collection is separated by ~
 
-Description Of Data:
+Description Of Data (In following order data availabe in a3.txt file):
 
 comments: The number of first level comments made on the talk.
 description: A blurb of what the talk is about.
