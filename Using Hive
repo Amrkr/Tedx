@@ -1,0 +1,76 @@
+TEDy
+IN HIVE SHELL:
+=================================================
+
+dfs -mkdir /user/ted
+dfs -put a3.txt /user/ted
+
+==================================================
+create database ted;
+==================================================
+
+use ted;
+==================================================
+
+CREATE EXTERNAL TABLE if not exists tedy (
+comments bigint, 
+description String, 
+duration bigint, 
+event String, 
+film_date bigint, 
+languages int, 
+main_speaker String, 
+name String, 
+num_speaker int, 
+published_date bigint, 
+ratings ARRAY <STRUCT <id: bigint, name: STRING, count: bigint >>, 
+related_talks ARRAY <STRUCT <id: bigint, hero: STRING, speaker: STRING, title: STRING, duration: bigint, slug: STRING, viewed_count: bigint >>, 
+speaker_occupation ARRAY<STRING>, 
+tags ARRAY<STRING>, 
+title String, 
+url String, 
+views BIGINT) 
+
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+COLLECTION ITEMS TERMINATED BY '~'
+MAP KEYS TERMINATED BY '|'
+LINES TERMINATED BY '\n'
+LOCATION '/user/ted'
+TBLPROPERTIES("skip.header.line.count"="1");
+
+====================================================
+
+create table tedx
+as select
+
+comments,
+description,
+duration,
+event,
+substr(from_unixtime(film_date), 1, 10) as film_date,
+languages,
+main_speaker,
+name,
+num_speaker,
+substr(from_unixtime(published_date), 1, 10) as published_date,
+ratings,
+related_talks,
+speaker_occupation,
+tags,
+title,
+url,
+views
+
+from tedy;
+===================================================
+
+select count(*) from tedx;
+
+Result : 2550
+===================================================
+
+Total No. of different speakers
+
+select count(distinct main_speaker) from tedx;
+2156
