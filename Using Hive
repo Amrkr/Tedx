@@ -1,17 +1,22 @@
-TEDy
-IN HIVE SHELL:
-=================================================
 
+IN HIVE SHELL:
+
+=================================================
 dfs -mkdir /user/ted
 dfs -put a3.txt /user/ted
 
 ==================================================
+show databases;
 create database ted;
-==================================================
-
 use ted;
-==================================================
 
+==================================================
+#Some useful commands
+
+#Display column header
+set hive.cli.print.header=true;
+
+==================================================
 CREATE EXTERNAL TABLE if not exists tedy (
 comments bigint, 
 description String, 
@@ -40,6 +45,7 @@ LOCATION '/user/ted'
 TBLPROPERTIES("skip.header.line.count"="1");
 
 ====================================================
+##Created for converting unix timestamp into normal date format:
 
 create table tedx
 as select
@@ -63,14 +69,211 @@ url,
 views
 
 from tedy;
+
 ===================================================
+##Checking for the data
 
-select count(*) from tedx;
+select count(*) as Total_rows from tedx;
 
-Result : 2550
+total_rows
+2550
+
+
 ===================================================
+##Total No. of different speakers
 
-Total No. of different speakers
+select count(distinct main_speaker) All_distinct_speakers from tedx;
 
-select count(distinct main_speaker) from tedx;
+all_distinct_speakers
 2156
+
+====================================================
+##Checking for distinct topic / for any duplicate topic
+
+select count(distinct title) as title from tedx;
+
+title
+2550
+
+====================================================
+## Total duration of all ted videos in hours:
+
+select concat(cast(format_number(sum(duration)/3600, 2) as string), ' Hrs') as Total_Duration from tedx;
+
+Result :
+Total_Duration
+585.44 Hrs
+
+====================================================
+## top 5 videos/url and title which are available in 50 or more no. of the languages
+
+select languages, title, url from tedx where languages>=50 order by languages desc limit 5; 
+
+languages	title	url
+72	Try something new for 30 days	https://www.ted.com/talks/matt_cutts_try_something_new_for_30_days
+69	"Weird, or just different?"	https://www.ted.com/talks/derek_sivers_weird_or_just_different
+66	8 secrets of success	https://www.ted.com/talks/richard_st_john_s_8_secrets_of_success
+65	How to start a movement	https://www.ted.com/talks/derek_sivers_how_to_start_a_movement
+64	Teach statistics before calculus!	https://www.ted.com/talks/arthur_benjamin_s_formula_for_changing_math_education
+
+====================================================
+## Top 5 Speakers who have given the ted talk more than once
+
+select count(0) as times, main_speaker from tedx group by main_speaker order by times desc limit 10;
+
+times	main_speaker
+9	Hans Rosling
+7	Juan Enriquez
+6	Rives
+6	Marco Tempest
+5	Julian Treasure
+5	Bill Gates
+5	Dan Ariely
+5	Nicholas Negroponte
+5	Clay Shirky
+5	Jacqueline Novogratz
+
+=====================================================
+## Top 5 title, url of ted videos in which more that 1 speaker participated (with num_speaker, duration (in minute)) 
+
+select num_speaker, concat(cast(format_number(duration/60, 2) as string), ' Min') as duration, title, url from tedx where num_speaker>1 order by num_speaker desc limit 5;
+
+num_speaker	duration	title	url
+5	9.58 Min	A dance to honor Mother Earth	https://www.ted.com/talks/jon_boogz_and_lil_buck_a_dance_to_honor_mother_earth
+4	47.55 Min	Political common ground in a polarized United States	https://www.ted.com/talks/gretchen_carlson_david_brooks_political_common_ground_in_a_polarized_united_states
+4	16.08 Min	An interview with the founders of Black Lives Matter	https://www.ted.com/talks/alicia_garza_patrisse_cullors_and_opal_tometi_an_interview_with_the_founders_of_black_lives_matter
+4	20.02 Min	The interspecies internet? An idea in progress	https://www.ted.com/talks/the_interspecies_internet_an_idea_in_progress
+3	18.03 Min	My journey from Marine to actor	https://www.ted.com/talks/adam_driver_my_journey_from_marine_to_actor
+
+=====================================================
+## Ted talk filmed per year
+
+select year(film_date) as year, count(1) as total_ted_talk from tedx group by year(film_date) order by year;
+
+year	total_ted_talk
+1972	1
+1983	1
+1984	1
+1990	1
+1991	1
+1994	1
+1998	6
+2001	5
+2002	27
+2003	33
+2004	33
+2005	66
+2006	52
+2007	112
+2008	84
+2009	232
+2010	267
+2011	270
+2012	267
+2013	270
+2014	237
+2015	239
+2016	246
+2017	98
+
+===================================================
+## Total Amount(in time) of videos per year
+
+select year(film_date) as year, concat(cast(format_number(sum(duration)/3600, 2) as string), ' Hrs') total_duration from tedx group by year(film_date) order by year;
+
+year	total_duration
+1972	0.07 Hrs
+1983	1.10 Hrs
+1984	0.42 Hrs
+1990	0.74 Hrs
+1991	0.97 Hrs
+1994	0.32 Hrs
+1998	1.89 Hrs
+2001	2.82 Hrs
+2002	8.80 Hrs
+2003	9.18 Hrs
+2004	10.72 Hrs
+2005	20.78 Hrs
+2006	14.02 Hrs
+2007	28.28 Hrs
+2008	21.12 Hrs
+2009	52.28 Hrs
+2010	62.03 Hrs
+2011	57.70 Hrs
+2012	57.24 Hrs
+2013	56.81 Hrs
+2014	50.24 Hrs
+2015	52.01 Hrs
+2016	53.37 Hrs
+2017	22.53 Hrs
+
+===================================================
+
+## Top 5 video which got much delayed in publishing on ted website
+
+select film_date, published_date, datediff(published_date, film_date) as delayed_days, title, url from tedx order by delayed_days desc limit 5;
+
+film_date	published_date	delayed_days	title	url
+1972-05-13	2010-05-14	13880	Why believe in others	https://www.ted.com/talks/viktor_frankl_youth_in_search_of_meaning
+1983-07-08	2010-03-03	9735	Physics is fun to imagine	https://www.ted.com/talks/richard_feynman
+1984-02-01	2008-03-10	8804	"5 predictions, from 1984"	https://www.ted.com/talks/nicholas_negroponte_in_1984_makes_5_predictions
+1991-12-20	2010-01-23	6609	Growing up in the universe	https://www.ted.com/talks/richard_dawkins_growing_up_in_the_universe
+1990-03-02	2008-03-12	6585	My days as a young rebel	https://www.ted.com/talks/frank_gehry_as_a_young_rebel
+
+==================================================
+## 5 Fastest published (or less delayed for publishing) ted video after filming
+
+select film_date, published_date, datediff(published_date, film_date) as delayed_days, title, url from tedx order by delayed_days limit 5;
+
+film_date	published_date	delayed_days	title	url
+2009-10-13	2008-10-30	-348	"Lose your ego, find your compassion"	https://www.ted.com/talks/imam_feisal_abdul_rauf
+2009-10-13	2008-10-31	-347	The evolution of compassion	https://www.ted.com/talks/robert_wright_the_evolution_of_compassion
+2009-09-30	2008-10-30	-335	Compassion at the dinner table	https://www.ted.com/talks/james_forbes
+2009-09-30	2008-10-30	-335	The balancing act of compassion	https://www.ted.com/talks/jackie_tabick
+2009-09-30	2008-10-30	-335	The profound journey of compassion	https://www.ted.com/talks/swami_dayananda_saraswati
+
+!!!!! Since delay can't be negative (as video can't be published before filming), there is something wrong with this SCRAPPED DATA. !!!!!
+
+select film_date, published_date, datediff(published_date, film_date) as delayed_days, title, url from tedx where datediff(published_date, film_date) > 0 order by  delayed_days, film_date desc limit 5;
+
+film_date	published_date	delayed_days	title	url
+2017-04-24	2017-04-25	1	Why the only future worth building includes everyone	https://www.ted.com/talks/pope_francis_why_the_only_future_worth_building_includes_everyone
+2014-03-19	2014-03-20	1	The NSA responds to Edward Snowden's TED Talk	https://www.ted.com/talks/richard_ledgett_the_nsa_responds_to_edward_snowden_s_ted_talk
+2014-03-17	2014-03-18	1	Here's how we take back the Internet	https://www.ted.com/talks/edward_snowden_here_s_how_we_take_back_the_internet
+2012-09-25	2012-09-26	1	An animated tour of the invisible	https://www.ted.com/talks/john_lloyd_an_animated_tour_of_the_invisible
+2012-04-24	2012-04-25	1	Just how small is an atom?	https://www.ted.com/talks/just_how_small_is_an_atom
+
+==================================================
+## Count of videos which got published on same day
+
+select count(1) as Same_day_published from tedx where datediff(published_date, film_date) in (0, 1);
+
+same_day_published
+17
+
+==================================================
+## Total different names available for ratings
+
+select distinct r.name as name from tedx lateral view inline(ratings) r as id, name, count order by name;
+or 
+select rating.name as name from tedx lateral view explode(ratings) r as rating group by rating.name order by name;
+
+name
+Beautiful
+Confusing
+Courageous
+Fascinating
+Funny
+Informative
+Ingenious
+Inspiring
+Jaw-dropping
+Longwinded
+OK
+Obnoxious
+Persuasive
+Unconvincing
+
+===================================================
+
+
