@@ -71,7 +71,7 @@ views
 from tedy;
 
 ===================================================
-##Checking for the data
+##1	Checking for the data / Total videos 
 
 select count(*) as Total_rows from tedx;
 
@@ -80,15 +80,15 @@ total_rows
 
 
 ===================================================
-##Total No. of different speakers
+##2	Total No. of different speakers
 
-select count(distinct main_speaker) All_distinct_speakers from tedx;
+select count(distinct lower(trim(main_speaker))) All_distinct_speakers from tedx;
 
 all_distinct_speakers
 2156
 
 ====================================================
-##Checking for distinct topic / for any duplicate topic
+##3	Checking for distinct topic / for any duplicate topic
 
 select count(distinct title) as title from tedx;
 
@@ -96,7 +96,7 @@ title
 2550
 
 ====================================================
-## Total duration of all ted videos in hours:
+##4	Total duration of all ted videos in hours:
 
 select concat(cast(format_number(sum(duration)/3600, 2) as string), ' Hrs') as Total_Duration from tedx;
 
@@ -105,7 +105,7 @@ Total_Duration
 585.44 Hrs
 
 ====================================================
-## top 5 videos/url and title which are available in 50 or more no. of the languages
+##5	top 5 videos/url and title which are available in 50 or more no. of the languages
 
 select languages, title, url from tedx where languages>=50 order by languages desc limit 5; 
 
@@ -117,7 +117,7 @@ languages	title	url
 64	Teach statistics before calculus!	https://www.ted.com/talks/arthur_benjamin_s_formula_for_changing_math_education
 
 ====================================================
-## Top 5 Speakers who have given the ted talk more than once
+##6	Top 5 Speakers who have given the ted talk more than once
 
 select count(0) as times, main_speaker from tedx group by main_speaker order by times desc limit 10;
 
@@ -134,7 +134,7 @@ times	main_speaker
 5	Jacqueline Novogratz
 
 =====================================================
-## Top 5 title, url of ted videos in which more that 1 speaker participated (with num_speaker, duration (in minute)) 
+##7	Top 5 title, url of ted videos in which more that 1 speaker participated (with num_speaker, duration (in minute)) 
 
 select num_speaker, concat(cast(format_number(duration/60, 2) as string), ' Min') as duration, title, url from tedx where num_speaker>1 order by num_speaker desc limit 5;
 
@@ -146,7 +146,7 @@ num_speaker	duration	title	url
 3	18.03 Min	My journey from Marine to actor	https://www.ted.com/talks/adam_driver_my_journey_from_marine_to_actor
 
 =====================================================
-## Ted talk filmed per year
+##8	Ted talk filmed per year
 
 select year(film_date) as year, count(1) as total_ted_talk from tedx group by year(film_date) order by year;
 
@@ -177,7 +177,7 @@ year	total_ted_talk
 2017	98
 
 ===================================================
-## Total Amount(in time) of videos per year
+##9	Total Amount(in time) of videos per year
 
 select year(film_date) as year, concat(cast(format_number(sum(duration)/3600, 2) as string), ' Hrs') total_duration from tedx group by year(film_date) order by year;
 
@@ -209,7 +209,7 @@ year	total_duration
 
 ===================================================
 
-## Top 5 video which got much delayed in publishing on ted website
+##10	Top 5 video which got much delayed in publishing on ted website
 
 select film_date, published_date, datediff(published_date, film_date) as delayed_days, title, url from tedx order by delayed_days desc limit 5;
 
@@ -221,7 +221,7 @@ film_date	published_date	delayed_days	title	url
 1990-03-02	2008-03-12	6585	My days as a young rebel	https://www.ted.com/talks/frank_gehry_as_a_young_rebel
 
 ==================================================
-## 5 Fastest published (or less delayed for publishing) ted video after filming
+##11	5 Fastest published (or less delayed for publishing) ted video after filming
 
 select film_date, published_date, datediff(published_date, film_date) as delayed_days, title, url from tedx order by delayed_days limit 5;
 
@@ -244,7 +244,7 @@ film_date	published_date	delayed_days	title	url
 2012-04-24	2012-04-25	1	Just how small is an atom?	https://www.ted.com/talks/just_how_small_is_an_atom
 
 ==================================================
-## Count of videos which got published on same day
+##12	Count of videos which got published on same day
 
 select count(1) as Same_day_published from tedx where datediff(published_date, film_date) in (0, 1);
 
@@ -252,7 +252,7 @@ same_day_published
 17
 
 ==================================================
-## Total different names available for ratings
+##13	Total different names available for ratings
 
 select distinct r.name as name from tedx lateral view inline(ratings) r as id, name, count order by name;
 or 
@@ -275,5 +275,223 @@ Persuasive
 Unconvincing
 
 ===================================================
+##14	Total different names/emotions having maximum count/likes
+
+select r.name as name, max(r.count) as likes from tedx lateral view inline(ratings) r as id, name, count group by r.name;
+
+name	likes
+Beautiful	9437
+Confusing	531
+Courageous	8668
+Fascinating	14447
+Funny	19645
+Informative	9787
+Ingenious	6073
+Inspiring	24924
+Jaw-dropping	14728
+Longwinded	447
+OK	1341
+Obnoxious	1361
+Persuasive	10704
+Unconvincing	2194
+
+===================================================
+##15	Total different names/emotions having maximum count/likes with title, url
+
+select t2.name as name, t2.count as likes, t1.title as title, t1.url as url
+from
+(select title, url, r1.name as name, r1.count as count from tedx lateral view inline(ratings) r1 as id, name, count ) t1
+join 
+(select r.name as name, max(r.count) as count from tedx lateral view inline(ratings) r as id, name, count group by r.name) t2
+
+on t1.name = t2.name and t1.count=t2.count;
+
+!!!!! FAILED: Execution Error, return code 1 from org.apache.hadoop.hive.ql.exec.mr.MapredLocalTask
+SOLVED : SET hive.auto.convert.join=false;
 
 
+name	likes	title	url
+Beautiful	9437	My stroke of insight	https://www.ted.com/talks/jill_bolte_taylor_s_powerful_stroke_of_insight
+Confusing	531	I believe we evolved from aquatic apes	https://www.ted.com/talks/elaine_morgan_says_we_evolved_from_aquatic_apes
+Courageous	8668	The price of shame	https://www.ted.com/talks/monica_lewinsky_the_price_of_shame
+Fascinating	14447	My stroke of insight	https://www.ted.com/talks/jill_bolte_taylor_s_powerful_stroke_of_insight
+Funny	19645	Do schools kill creativity?	https://www.ted.com/talks/ken_robinson_says_schools_kill_creativity
+Informative	9787	Your body language may shape who you are	https://www.ted.com/talks/amy_cuddy_your_body_language_shapes_who_you_are
+Ingenious	6073	Do schools kill creativity?	https://www.ted.com/talks/ken_robinson_says_schools_kill_creativity
+Inspiring	24924	Do schools kill creativity?	https://www.ted.com/talks/ken_robinson_says_schools_kill_creativity
+Jaw-dropping	14728	How PhotoSynth can connect the world's images	https://www.ted.com/talks/blaise_aguera_y_arcas_demos_photosynth
+Longwinded	447	17 words of architectural inspiration	https://www.ted.com/talks/daniel_libeskind_s_17_words_of_architectural_inspiration
+OK	1341	How great leaders inspire action	https://www.ted.com/talks/simon_sinek_how_great_leaders_inspire_action
+Obnoxious	1361	17 words of architectural inspiration	https://www.ted.com/talks/daniel_libeskind_s_17_words_of_architectural_inspiration
+Persuasive	10704	Do schools kill creativity?	https://www.ted.com/talks/ken_robinson_says_schools_kill_creativity
+Unconvincing	2194	I believe we evolved from aquatic apes	https://www.ted.com/talks/elaine_morgan_says_we_evolved_from_aquatic_apes
+
+===================================================
+##16	Total different names/emotions having minimum count/likes with title, url
+
+select t2.name as name, t2.count as likes, t1.title as title, t1.url as url
+from
+(select title, url, r1.name as name, r1.count as count from tedx lateral view inline(ratings) r1 as id, name, count ) t1
+join 
+(select r.name as name, min(r.count) as count from tedx lateral view inline(ratings) r as id, name, count group by r.name) t2
+
+on t1.name = t2.name and t1.count=t2.count;
+
+
+Fetched: 456 row(s)
+
+===================================================
+##17	Total number of ratings(Funny, Beautiful, Courageous, etc) given for the total TED talks
+
+select r.name as name, sum(r.count) as overall_likes from tedx lateral view inline(ratings) r as is, name, count group by r.name;
+
+name	overall_likes
+Beautiful	490349
+Confusing	53436
+Courageous	420045
+Fascinating	801119
+Funny	393895
+Informative	887434
+Ingenious	384386
+Inspiring	1352048
+Jaw-dropping	377547
+Longwinded	83344
+OK	207157
+Obnoxious	66303
+Persuasive	561220
+Unconvincing	134558
+
+===================================================
+##18	Background/Occupation of speaker who has given many talks
+
+select count(0) as times, main_speaker, speaker_occupation from tedx group by main_speaker, speaker_occupation order by times desc limit 10;
+
+times	main_speaker	speaker_occupation
+9	Hans Rosling	["Global health expert","data visionary"]
+7	Juan Enriquez	["Futurist"]
+6	Marco Tempest	["Techno-illusionist"]
+6	Rives	["Performance poet","multimedia artist"]
+5	Julian Treasure	["Sound consultant"]
+5	Nicholas Negroponte	["Tech visionary"]
+5	Jacqueline Novogratz	["Investor","advocate for moral leadership"]
+5	Dan Ariely	["Behavioral economist"]
+5	Clay Shirky	["Social Media Theorist"]
+5	Bill Gates	["Philanthropist"]
+
+==================================================
+##19	Total no. of backgrounds from where people have given the ted talk
+
+select count(distinct lower(trim(backgrounds))) total_count from tedx lateral view explode(speaker_occupation) s as backgrounds;
+
+total_count
+1290
+
+
+==================================================
+##20	Top 10 backgrounds/occupations From which people gave most ted talk
+
+select lower(trim(backgrounds)) as backgrounds, count(1) as speakers from tedx lateral view explode(speaker_occupation) s as backgrounds group by lower(trim(backgrounds)) order by speakers desc limit 10;
+
+backgrounds	speakers
+writer	93
+author	85
+activist	66
+artist	65
+entrepreneur	59
+designer	58
+journalist	50
+inventor	49
+educator	49
+architect	37
+
+lower and trim function is used to do Write = writer and removing any head/trail space
+===================================================
+##21	How many times ted talks have been watched
+
+select sum(views) as Total_Views from tedx;
+
+total_views
+4330658578
+
+==================================================
+##22	Top 10 video/url, title based on views
+
+select views, title, url from tedx order by views desc limit 10;
+
+views	title	url
+47227110	Do schools kill creativity?	https://www.ted.com/talks/ken_robinson_says_schools_kill_creativity
+43155405	Your body language may shape who you are	https://www.ted.com/talks/amy_cuddy_your_body_language_shapes_who_you_are
+34309432	How great leaders inspire action	https://www.ted.com/talks/simon_sinek_how_great_leaders_inspire_action
+31168150	The power of vulnerability	https://www.ted.com/talks/brene_brown_on_vulnerability
+22270883	10 things you didn't know about orgasm	https://www.ted.com/talks/mary_roach_10_things_you_didn_t_know_about_orgasm
+21594632	How to speak so that people want to listen	https://www.ted.com/talks/julian_treasure_how_to_speak_so_that_people_want_to_listen
+21190883	My stroke of insight	https://www.ted.com/talks/jill_bolte_taylor_s_powerful_stroke_of_insight
+20685401	Why we do what we do	https://www.ted.com/talks/tony_robbins_asks_why_we_do_what_we_do
+20475972	This is what happens when you reply to spam email	https://www.ted.com/talks/james_veitch_this_is_what_happens_when_you_reply_to_spam_email
+19787465	"Looks aren't everything. Believe me, I'm a model."	https://www.ted.com/talks/cameron_russell_looks_aren_t_everything_believe_me_i_m_a_model
+
+==================================================
+##23	Number of TED talks for each tag
+
+select count(0) as total_videos, lower(trim(t.tags)) as tags from tedx lateral view explode(tags) t as tags group by lower(trim(t.tags));
+
+total_videos	tags
+3	3d printing
+157	activism
+5	addiction
+48	adventure
+10	advertising
+105	africa
+40	aging
+36	agriculture
+43	ai
+16	aids
+7	aircraft
+38	algorithm
+37	alternative energy
+3	alzheimer's aging
+1	alzheimer's biology
+1	alzheimer's ted fellows
+1	alzheimer's tedx
+22	ancient world
+109	animals
+16	animation
+.
+.
+.
+
+Fetched: 419 row(s)
+
+=====================================================
+##24	Top 10 Tags based on no. of ted videos available
+
+select count(0) as total_videos, lower(trim(t.tags)) as tags from tedx lateral view explode(tags) t as tags group by lower(trim(t.tags)) order by total_videos desc limit 10;
+
+total_videos	tags
+727	technology
+567	science
+501	global issues
+486	culture
+449	tedx
+418	design
+348	business
+299	entertainment
+236	health
+229	innovation
+
+=====================================================
+##25	No. of ted titles which seems to be questions (may be a kind of sentimental analysis)
+
+select count(title) Questionable_title from tedx where 
+lower(title) LIKE '%how%' 
+or lower(title) LIKE '%why%'
+or lower(title) LIKE '%what%'
+or lower(title) LIKE '%when'
+or lower(title) LIKE '%who%'
+or lower(title) LIKE '%where%'
+or lower(title) LIKE '%?%';
+
+questionable_title
+775
+
+======================================================
