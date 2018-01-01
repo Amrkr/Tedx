@@ -494,4 +494,33 @@ or lower(title) LIKE '%?%';
 questionable_title
 775
 
+=====================================================
+## Creating Parquet table and loading data from existing Hive Table
+
+CREATE TABLE abc (
+comments bigint, 
+description String, 
+duration bigint, 
+event String, 
+film_date bigint, 
+languages int, 
+main_speaker String, 
+name String, 
+num_speaker int, 
+published_date bigint, 
+ratings ARRAY <STRUCT <id: bigint, name: STRING, count: bigint >>, 
+related_talks ARRAY <STRUCT <id: bigint, hero: STRING, speaker: STRING, title: STRING, duration: bigint, slug: STRING, viewed_count: bigint >>, 
+speaker_occupation ARRAY<STRING>, 
+tags ARRAY<STRING>, 
+title String, 
+url String, 
+views BIGINT) 
+
+STORED AS PARQUET;
+
+insert into abc select * from ted.tedx;
+
+
+select count(*) from abc;
+2550
 ======================================================
